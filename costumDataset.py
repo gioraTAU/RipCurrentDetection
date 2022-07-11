@@ -85,12 +85,12 @@ class RipCurrentDataset(Dataset):
         target['image_id'] = torch.tensor(item)
 
         if label == 1:
-            target['box'] = torch.cat((x1.unsqueeze(0), y1.unsqueeze(0), x2.unsqueeze(0), y2.unsqueeze(0)), dim=1)
+            target['box'] = torch.cat((x1.unsqueeze(0), y1.unsqueeze(0), x2.unsqueeze(0), y2.unsqueeze(0)), dim=1)[0]
         else:
-            target['box'] = torch.zeros((0, 4), dtype=torch.int)
+            target['box'] = torch.zeros((0, 4), dtype=torch.int64)
 
 
-        target['labels'] = label
+        target['labels'] = label[0]
 
         return img_tensor, target
 
