@@ -75,24 +75,33 @@ class RipCurrentDataset(Dataset):
         img = Image.open(self.image_dir + img_name).convert("RGB")
         img_tensor = self.transform(img)
 
-        x1, y1, x2, y2 = torch.tensor(img_data['x1'].values), torch.tensor(img_data['y1'].values), \
-                         torch.tensor(img_data['x2'].values), torch.tensor(img_data['y2'].values)
-        label = torch.tensor(img_data['label'].values)
+
+
+        x1, y1, x2, y2 = torch.tensor(img_data['x1'].values, dtype=torch.int64), torch.tensor(img_data['y1'].values, dtype=torch.int64), \
+                         torch.tensor(img_data['x2'].values, dtype=torch.int64), torch.tensor(img_data['y2'].values, dtype=torch.int64)
+        label = torch.tensor(img_data['label'].values, dtype=torch.int64)
 
         target = {}
         target['image_id'] = torch.tensor(item)
+
         if label == 1:
             target['box'] = torch.cat((x1.unsqueeze(0), y1.unsqueeze(0), x2.unsqueeze(0), y2.unsqueeze(0)), dim=1)
         else:
-            target['box'] = torch.zeros((0, 4), dtype=torch.float32)
+            target['box'] = torch.zeros((0, 4), dtype=torch.int)
+
+
         target['labels'] = label
 
         return img_tensor, target
 
+if __name__ == '__main__':
 
-df = pd.read_csv('C:\\Giora\\TAU\\MSc_courses\\Deep_Learning\\final_project\\aug_data_labels.csv')
-img_dir = 'C:\\Giora\\TAU\\MSc_courses\\Deep_Learning\\final_project\\augmanted_training_data\\'
-trans = T.ToTensor()
-train_ds = RipCurrentDataset(df, img_dir, trans)
-train_dl = DataLoader(train_ds, batch_size=16, shuffle=True)
-a = next(iter(train_dl))
+
+    df = pd.read_csv(r'..\Data\aug_data_labels.csv')
+    img_dir = r'..\Data\fixed_data\\'
+    trans = T.ToTensor()
+    train_ds = RipCurrentDataset(df, img_dir, trans)
+    train_dl = DataLoader(train_ds, batch_size=16, shuffle=True)
+    a = next(iter(train_dl))
+
+    print('stam')

@@ -379,9 +379,17 @@ def fix_size_and_aug(labels_file_path, target_size, imgs_path, target_path):
     aug_data_labels = pd.DataFrame(list_to_write, columns=["Name", "x1", "y1", "x2", "y2", "label"])
     aug_data_labels.to_csv('aug_data_labels.csv', encoding='utf-8', index=False)
 
+if __name__ == '__main__':
+    # S = np.array((300, 300))
+    # data_labels_path = 'C:\\Giora\\TAU\\MSc_courses\\Deep_Learning\\final_project\\training_data\\data_labels.csv'
+    # im_path = 'C:\\Giora\\TAU\\MSc_courses\\Deep_Learning\\final_project\\training_data\\with_rips\\'
+    # target_path = 'C:\\Giora\\TAU\\MSc_courses\\Deep_Learning\\final_project\\augmanted_training_data\\'
+    # fix_size_and_aug(data_labels_path, S, im_path, target_path)
+    from pathlib import Path
 
-S = np.array((300, 300))
-data_labels_path = 'C:\\Giora\\TAU\\MSc_courses\\Deep_Learning\\final_project\\training_data\\data_labels.csv'
-im_path = 'C:\\Giora\\TAU\\MSc_courses\\Deep_Learning\\final_project\\training_data\\with_rips\\'
-target_path = 'C:\\Giora\\TAU\\MSc_courses\\Deep_Learning\\final_project\\augmanted_training_data\\'
-fix_size_and_aug(data_labels_path, S, im_path, target_path)
+    data_path = Path(r'..\Data')
+    S = np.array((300, 300))
+    data_labels_path = str(data_path / 'data_labels.csv')
+    im_path = str(data_path / 'with_rips') + '\\'
+    target_path = str(data_path / 'fixed_data') + '\\'
+    fix_size_and_aug(data_labels_path, S, im_path, target_path)
