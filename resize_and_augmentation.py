@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 import cv2
 import matplotlib.pyplot as plt
@@ -378,6 +377,7 @@ def fix_size_and_aug(labels_file_path, target_size, imgs_path, target_path):
 
     aug_data_labels = pd.DataFrame(list_to_write, columns=["Name", "x1", "y1", "x2", "y2", "label"])
     aug_data_labels.to_csv('aug_data_labels.csv', encoding='utf-8', index=False)
+
 
 if __name__ == '__main__':
     # S = np.array((300, 300))

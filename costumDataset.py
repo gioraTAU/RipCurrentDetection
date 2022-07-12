@@ -75,8 +75,6 @@ class RipCurrentDataset(Dataset):
         img = Image.open(self.image_dir + img_name).convert("RGB")
         img_tensor = self.transform(img)
 
-
-
         x1, y1, x2, y2 = torch.tensor(img_data['x1'].values, dtype=torch.int64), torch.tensor(img_data['y1'].values, dtype=torch.int64), \
                          torch.tensor(img_data['x2'].values, dtype=torch.int64), torch.tensor(img_data['y2'].values, dtype=torch.int64)
         label = torch.tensor(img_data['label'].values, dtype=torch.int64)
@@ -89,13 +87,12 @@ class RipCurrentDataset(Dataset):
         else:
             target['box'] = torch.zeros((0, 4), dtype=torch.int64)
 
-
         target['labels'] = label[0]
 
         return img_tensor, target
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
 
     df = pd.read_csv(r'..\Data\aug_data_labels.csv')
     img_dir = r'..\Data\fixed_data\\'
