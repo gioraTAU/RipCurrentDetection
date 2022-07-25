@@ -280,7 +280,10 @@ def rotate_image_pipe(image, alpha, bbox):
     bboxes = rotated_bbox
 
     bboxes = clip_box(bboxes, [0, 0, w, h], 0.25)
-    bboxes = bboxes[0]
+    if bboxes.shape[0] == 0:
+        bboxes = np.zeros((1, 4))
+    else:
+        bboxes = bboxes[0]
 
     return img_rot_resized, bboxes
 
@@ -337,7 +340,7 @@ def fix_size_and_aug(labels_file_path, target_size, imgs_path, target_path):
 
     labels_df = pd.read_csv(labels_file_path)
     box = labels_df.loc[:, ['x1', 'y1', 'x2', 'y2']].to_numpy()
-    imgs_name = labels_df['Name']
+    imgs_name = labels_df['Name'].drop_duplicates()
     labels = labels_df['label']
 
     list_to_write = []
@@ -345,14 +348,19 @@ def fix_size_and_aug(labels_file_path, target_size, imgs_path, target_path):
 
         if not(cur_img_fname.endswith(".png")):
             cur_img_fname = cur_img_fname + '.png'
+            no_rip_flag = 1
+        else:
+            no_rip_flag = 0
 
         cur_img = imgs_path + cur_img_fname
         img = cv2.imread(cur_img)
 
-        try:
+        #try:
+        if not(img is None):
             cur_img_resized = cv2.resize(img, target_size)
             h, w, c = img.shape
             kx, ky = target_size[1] / w, target_size[0] / h
+
             original_box = box[num, :]
             bbox_sized = np.round_((kx * original_box[0], ky * original_box[1], kx * original_box[2], ky * original_box[3])).astype(int)
 
@@ -362,18 +370,25 @@ def fix_size_and_aug(labels_file_path, target_size, imgs_path, target_path):
             fname_fixed0 = cur_img_fname[:-4] + '_0deg.png'
             fname_fixed90 = cur_img_fname[:-4] + '_90deg.png'
             fname_fixedm90 = cur_img_fname[:-4] + '_m90deg.png'
+            cur_label = labels[num]
 
-            list_to_write.append([fname_fixed0, bbox_sized[0], bbox_sized[1], bbox_sized[2], bbox_sized[3], labels[num]])
-            list_to_write.append([fname_fixed90, bb_rot[0], bb_rot[1], bb_rot[2], bb_rot[3], labels[num]])
-            list_to_write.append([fname_fixedm90, bb_mrot[0], bb_mrot[1], bb_mrot[2], bb_mrot[3], labels[num]])
+            if no_rip_flag == 1:
+                bbox_sized, bb_rot, bb_mrot = np.zeros((1, 4))[0].astype(int), np.zeros((1, 4))[0].astype(int), np.zeros((1, 4))[0].astype(int)
+                cur_label = 0
+            list_to_write.append([fname_fixed0, bbox_sized[0], bbox_sized[1], bbox_sized[2], bbox_sized[3], cur_label])
+            list_to_write.append([fname_fixed90, bb_rot[0], bb_rot[1], bb_rot[2], bb_rot[3], cur_label])
+            list_to_write.append([fname_fixedm90, bb_mrot[0], bb_mrot[1], bb_mrot[2], bb_mrot[3], cur_label])
 
             cv2.imwrite(target_path + fname_fixed0, cur_img_resized)
             cv2.imwrite(target_path + fname_fixed90, cur_img_rot)
             cv2.imwrite(target_path + fname_fixedm90, cur_img_mrot)
 
-        except:
+        else:
 
             print("Image " + cur_img_fname + " can't be found")
+
+        if num % 100 == 0:
+            print('Augment and resized picture number: ' + str(num))
 
     aug_data_labels = pd.DataFrame(list_to_write, columns=["Name", "x1", "y1", "x2", "y2", "label"])
     aug_data_labels.to_csv('aug_data_labels.csv', encoding='utf-8', index=False)
@@ -387,9 +402,9 @@ if __name__ == '__main__':
     # fix_size_and_aug(data_labels_path, S, im_path, target_path)
     from pathlib import Path
 
-    data_path = Path(r'..\Data')
+    data_path = Path('/home/giora/rip_current_detector')
     S = np.array((300, 300))
     data_labels_path = str(data_path / 'data_labels.csv')
-    im_path = str(data_path / 'with_rips') + '\\'
-    target_path = str(data_path / 'fixed_data') + '\\'
+    im_path = str(data_path / 'training_data') + '/'
+    target_path = str(data_path / 'augmanted_training_data') + '/'
     fix_size_and_aug(data_labels_path, S, im_path, target_path)
