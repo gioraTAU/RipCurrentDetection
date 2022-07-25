@@ -24,7 +24,7 @@ def draw_rect(image, box):
     open new figure with image and bounding box
 
     """
-    box = box[0]
+    #box = box[0]
     x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
     img1 = ImageDraw.Draw(image)
     shape = [(x1, y1), (x2, y2)]
@@ -85,7 +85,7 @@ class RipCurrentDataset(Dataset):
         if label == 1:
             target['box'] = torch.cat((x1.unsqueeze(0), y1.unsqueeze(0), x2.unsqueeze(0), y2.unsqueeze(0)), dim=1)[0]
         else:
-            target['box'] = torch.zeros((0, 4), dtype=torch.int64)
+            target['box'] = torch.zeros((1, 4), dtype=torch.int64).squeeze()
 
         target['labels'] = label[0]
 
@@ -94,8 +94,8 @@ class RipCurrentDataset(Dataset):
 
 if __name__ == '__main__':
 
-    df = pd.read_csv(r'..\Data\aug_data_labels.csv')
-    img_dir = r'..\Data\fixed_data\\'
+    df = pd.read_csv('/home/giora/rip_current_detector/aug_data_labels.csv')
+    img_dir = '/home/giora/rip_current_detector/augmanted_training_data/'
     trans = T.ToTensor()
     train_ds = RipCurrentDataset(df, img_dir, trans)
     train_dl = DataLoader(train_ds, batch_size=16, shuffle=True)
