@@ -402,9 +402,15 @@ if __name__ == '__main__':
     # fix_size_and_aug(data_labels_path, S, im_path, target_path)
     from pathlib import Path
 
-    data_path = Path('/home/giora/rip_current_detector')
+
+    # data_path = Path('/home/giora/rip_current_detector')
+    # data_labels_path = str(data_path / 'data_labels.csv')
+    data_path = Path(r'..\Data')
+    data_labels_path = 'data_labels.csv'
+
     S = np.array((300, 300))
-    data_labels_path = str(data_path / 'data_labels.csv')
+
     im_path = str(data_path / 'training_data') + '/'
     target_path = str(data_path / 'augmanted_training_data') + '/'
+
     fix_size_and_aug(data_labels_path, S, im_path, target_path)
