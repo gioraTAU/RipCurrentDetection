@@ -85,7 +85,8 @@ class RipCurrentDataset(Dataset):
         if label == 1:
             target['box'] = torch.cat((x1.unsqueeze(0), y1.unsqueeze(0), x2.unsqueeze(0), y2.unsqueeze(0)), dim=1)[0]
         else:
-            target['box'] = torch.zeros((1, 4), dtype=torch.int64).squeeze()
+            #target['box'] = torch.zeros((1, 4), dtype=torch.int64).squeeze()
+            target['box'] = torch.tensor((0, 0, 300, 300), dtype=torch.int64).squeeze()
 
         target['labels'] = label[0]
 
