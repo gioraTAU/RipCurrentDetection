@@ -5,7 +5,11 @@ import os
 import time
 import argparse
 import pathlib
+from pathlib import Path
+from collections import namedtuple
+
 from model import create_model
+
 from config import (
     NUM_CLASSES, DEVICE, CLASSES
 )
@@ -16,6 +20,37 @@ parser.add_argument(
     '-i', '--input', help='test_data/rip_01.mp4',
     default='test_data/rip_01.mp4'
 )
+
+save_bounding_boxes = True
+plot_video_gt = True
+video_bb_gt = [161, 71, 348, 368]
+
+#Modified area intersection code based on:https://stackoverflow.com/questions/27152904/calculate-overlapped-area-between-two-rectangles
+Rectangle = namedtuple('Rectangle', 'xmin ymin xmax ymax')
+
+def rect_intersection(rect_a: Rectangle, rect_b: Rectangle):
+    # returns 0 if rectangles don't intersect
+    dx = min(rect_a.xmax, rect_b.xmax) - max(rect_a.xmin, rect_b.xmin)
+    dy = min(rect_a.ymax, rect_b.ymax) - max(rect_a.ymin, rect_b.ymin)
+    if (dx>=0) and (dy>=0):
+        return dx*dy
+
+    #  rectangles don't intersect
+    return 0
+
+
+def rect_area(rect: Rectangle):
+    return (rect.xmax - rect.xmin) * (rect.ymax - rect.ymin)
+
+
+def IOU(rect_a: list, rect_b: list):
+    rect_a = Rectangle(*rect_a)
+    rect_b = Rectangle(*rect_b)
+    intersetion_area = rect_intersection(rect_a, rect_b)
+    union_area = rect_area(rect_a) + rect_area(rect_b) - intersetion_area
+    return float(intersetion_area)/float(union_area)
+
+
 args = vars(parser.parse_args())
 # this will help us create a different color for each class
 COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
@@ -34,8 +69,26 @@ if (cap.isOpened() == False):
 # get the frame width and height
 frame_width = int(cap.get(3))
 frame_height = int(cap.get(4))
-save_name = str(pathlib.Path(args['input'])).split(os.path.sep)[-1].split('.')[0]
-# define codec and create VideoWriter object
+video_file_path = Path(args['input'])
+
+save_name = video_file_path.name.split('.')[0]
+
+bb_file_path = Path(f'outputs/{save_name}.csv')
+if save_bounding_boxes:
+    with open(bb_file_path, 'w') as bb_fp:
+        bb_fp.write('frame no.,x1,y1,x2,y2\n')
+
+
+def save_bb(frame_number, bounding_box):
+    '''
+    bounding_box = top left corner and bottom right corners
+    '''
+    if not save_bounding_boxes:
+        return
+    with open(bb_file_path, 'a') as bb_fp:
+        bb_fp.write(f'{frame_number},{",".join(map(str,bounding_box))}\n')
+
+    # define codec and create VideoWriter object
 out = cv2.VideoWriter(f"inference_outputs/videos/{save_name}.mp4",
                       cv2.VideoWriter_fourcc(*'mp4v'), 30,
                       RESIZE_TO)
@@ -47,10 +100,15 @@ N_agg = 60  # number of frames to aggregate
 T_val = 40  # threshold value to extract aggregated rectangle
 frame_agg = np.zeros((N_agg, 300, 300))  # aggregation frames
 n_frame = 0
+frame_counter = 0
+good_frames = []
 while cap.isOpened():
     # capture each frame of the video
     ret, frame = cap.read()
+    # [{'frame: #, 'IOU': #}]
+
     if ret:
+        frame_counter += 1
         frame = cv2.resize(frame, RESIZE_TO)
         image = frame.copy()
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
@@ -80,14 +138,17 @@ while cap.isOpened():
         outputs = [{k: v.to('cpu') for k, v in t.items()} for t in outputs]
         # carry further only if there are detected boxes
         if len(outputs[0]['boxes']) != 0:
+
             boxes = outputs[0]['boxes'].data.numpy()
             scores = outputs[0]['scores'].data.numpy()
             # filter out boxes according to `detection_threshold`
             boxes = boxes[scores >= detection_threshold].astype(np.int32)
+
             if boxes.shape[0] > 1:
                 S = (boxes[:, 3]-boxes[:, 1])*(boxes[:, 2]-boxes[:, 0])
                 boxes = boxes[np.argmax(S), :]
                 boxes = np.reshape(boxes, (1, 4))
+
             draw_boxes = boxes.copy()
             # get all the predicited class names
             pred_classes = [CLASSES[i] for i in outputs[0]['labels'].cpu().numpy()]
@@ -117,9 +178,18 @@ while cap.isOpened():
                     draw_boxes = np.reshape(draw_boxes, (1, 4))
 
                 # draw the bounding boxes and write the class name on top of it
+            max_IOU = 0
+            max_IOU_bbox = None
             for j, box in enumerate(draw_boxes):
                 class_name = pred_classes[j]
                 color = COLORS[CLASSES.index(class_name)]
+                save_bb(frame_counter, box)
+                box_IOU = IOU(video_bb_gt, box)
+
+                if box_IOU > max_IOU:
+                    max_IOU = box_IOU
+                    max_IOU_bbox = box
+
                 cv2.rectangle(frame,
                               (int(box[0]), int(box[1])),
                               (int(box[2]), int(box[3])),
@@ -128,10 +198,31 @@ while cap.isOpened():
                             (int(box[0]), int(box[1] - 5)),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, color,
                             2, lineType=cv2.LINE_AA)
+            if max_IOU >= 0.3:
+                good_frames.append({'frame': frame_counter, 'max box IOU': max_IOU})
+
+            if plot_video_gt:
+                box = video_bb_gt
+                color = [0,0,0]
+                cv2.rectangle(frame,
+                              (int(box[0]), int(box[1])),
+                              (int(box[2]), int(box[3])),
+                              color, 2)
+                cv2.putText(frame, f'GT, IOU {max_IOU:0.2f}',
+                            (int(box[0]), int(box[1] - 5)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, color,
+                            2, lineType=cv2.LINE_AA)
+
         cv2.putText(frame, f"{fps:.1f} FPS",
                     (15, 25),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
                     2, lineType=cv2.LINE_AA)
+
+        num_good_frames = float(len(good_frames))
+        success_rate = num_good_frames/float(frame_counter)
+        # print(f'\rframe num: {frame_counter}, max_IOU: {max_IOU:.2f}, good frame: {num_good_frames:.0f} ,success: {success_rate:.2f}', end='')
+        print(f'frame num: {frame_counter}, good frames: {num_good_frames:.0f} ,success rate: {success_rate:.2f}')
+
         cv2.imshow('image', frame)
         out.write(frame)
         # press `q` to exit
