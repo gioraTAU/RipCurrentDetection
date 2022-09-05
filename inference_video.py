@@ -14,7 +14,7 @@ from config import (
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '-i', '--input', help='test_data/rip_01.mp4',
-    default='test_data/rip_08.mp4'
+    default='test_data/rip_01.mp4'
 )
 args = vars(parser.parse_args())
 # this will help us create a different color for each class
@@ -59,7 +59,7 @@ while cap.isOpened():
         # bring color channels to front
         image = np.transpose(image, (2, 0, 1)).astype(np.float32)
         # convert to tensor
-        image = torch.tensor(image, dtype=torch.float).cuda()
+        image = torch.tensor(image, dtype=torch.float).to(DEVICE)
         # add batch dimension
         image = torch.unsqueeze(image, 0)
         # get the start time
