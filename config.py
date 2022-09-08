@@ -11,7 +11,7 @@ CLASSES = ['__background__', '1']
 NUM_CLASSES = len(CLASSES)
 
 # whether to visualize images after crearing the data loaders
-VISUALIZE_TRANSFORMED_IMAGES = True
+VISUALIZE_TRANSFORMED_IMAGES = False
 
 # location to save model and plots
 OUT_DIR = 'outputs'

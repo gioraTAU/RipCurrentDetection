@@ -41,9 +41,10 @@ class SaveBestModel:
     """
 
     def __init__(
-            self, best_valid_loss=float('inf')
+            self, OUT_DIR, best_valid_loss=float('inf'),
     ):
         self.best_valid_loss = best_valid_loss
+        self.DIR = OUT_DIR
 
     def __call__(
             self, current_valid_loss,
@@ -57,7 +58,7 @@ class SaveBestModel:
                 'epoch': epoch + 1,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-            }, 'outputs/best_model.pth')
+            }, self.DIR + '/best_model.pth')
 
 
 def collate_fn(batch):
@@ -116,18 +117,19 @@ def show_tranformed_image(train_loader):
             for box_num, box in enumerate(boxes):
                 sample = images[box_num].permute(1, 2, 0).cpu().numpy()
                 sample = np.ascontiguousarray(sample)
-                cv2.rectangle(sample,
-                            (box[0], box[1]),
-                            (box[2], box[3]),
-                            (0, 0, 255), 2)
-                cv2.putText(sample, CLASSES[labels[box_num]],
-                            (box[0], box[1]-10), cv2.FONT_HERSHEY_SIMPLEX,
-                            1.0, (0, 0, 255), 2)
+                for rect in box:
+                    cv2.rectangle(sample,
+                                (rect[0], rect[1]),
+                                (rect[2], rect[3]),
+                                (0, 0, 255), 2)
+                    cv2.putText(sample, CLASSES[labels[box_num, 0]],
+                                (rect[0], rect[1]-10), cv2.FONT_HERSHEY_SIMPLEX,
+                                1.0, (0, 0, 255), 2)
                 plt.imshow((sample * 255).astype(np.uint8))
                 plt.show()
 
 
-def save_model(epoch, model, optimizer):
+def save_model(OUT_DIR, epoch, model, optimizer):
     """
     Function to save the trained model till current epoch, or whenver called
     """
@@ -135,7 +137,7 @@ def save_model(epoch, model, optimizer):
                 'epoch': epoch+1,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                }, 'outputs/last_model.pth')
+                }, OUT_DIR + '/last_model.pth')
 
 
 def save_loss_plot(OUT_DIR, train_loss, val_loss):

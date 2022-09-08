@@ -115,14 +115,14 @@ if __name__ == '__main__':
     train_loss_list = []
     val_loss_list = []
     # name to save the trained model with
-    MODEL_NAME = 'model'
+    MODEL_NAME = 'model_single_rip'
     # whether to show transformed images from data loader or not
     if VISUALIZE_TRANSFORMED_IMAGES:
         from custom_utils import show_tranformed_image
 
         show_tranformed_image(train_loader)
     # initialize SaveBestModel class
-    save_best_model = SaveBestModel()
+    save_best_model = SaveBestModel(OUT_DIR)
     # start the training epochs
     for epoch in range(NUM_EPOCHS):
         print(f"\nEPOCH {epoch + 1} of {NUM_EPOCHS}")
@@ -133,7 +133,6 @@ if __name__ == '__main__':
         start = time.time()
         model.train()
         train_loss = train(train_loader, model)
-        model.eval()
         val_loss = validate(valid_loader, model)
         print(f"Epoch #{epoch + 1} train loss: {train_loss_hist.value:.3f}")
         print(f"Epoch #{epoch + 1} validation loss: {val_loss_hist.value:.3f}")
@@ -145,7 +144,7 @@ if __name__ == '__main__':
             val_loss_hist.value, epoch, model, optimizer
         )
         # save the current epoch model
-        save_model(epoch, model, optimizer)
+        save_model(OUT_DIR, epoch, model, optimizer)
         # save loss plot
         save_loss_plot(OUT_DIR, train_loss, val_loss)
 
