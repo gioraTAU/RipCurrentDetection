@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import time
 import pandas as pd
 from torch.utils.data import DataLoader
-from costumDataset import RipCurrentDataset
+from costumDataset import DoubleRipCurrentDataset
 import torchvision.transforms as T
 
 
@@ -33,7 +33,9 @@ def train(train_data_loader, model):
         images = list(image.to(DEVICE) for image in images)
         d = []
         for iii, jjj in zip(targets['labels'], targets['box']):
-            cur_element = {'labels': iii.to(DEVICE).unsqueeze(0), 'boxes': jjj.unsqueeze(0).to(DEVICE)}
+            #cur_element = {'labels': iii.to(DEVICE).unsqueeze(0), 'boxes': jjj.unsqueeze(0).to(DEVICE)}
+            cur_element = {'labels': iii.to(DEVICE), 'boxes': jjj.to(DEVICE)}
+
             d.append(cur_element)
 
         #targets = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
@@ -67,8 +69,12 @@ def validate(valid_data_loader, model):
         images = list(image.to(DEVICE) for image in images)
         d = []
         for iii, jjj in zip(targets['labels'], targets['box']):
-            cur_element = {'labels': iii.to(DEVICE).unsqueeze(0), 'boxes': jjj.unsqueeze(0).to(DEVICE)}
+            #cur_element = {'labels': iii.to(DEVICE).unsqueeze(0), 'boxes': jjj.unsqueeze(0).to(DEVICE)}
+            cur_element = {'labels': iii.to(DEVICE), 'boxes': jjj.to(DEVICE)}
+
             d.append(cur_element)
+            #cur_element = {'labels': iii.to(DEVICE).unsqueeze(0), 'boxes': jjj.unsqueeze(0).to(DEVICE)}
+            #d.append(cur_element)
 
         with torch.no_grad():
             loss_dict = model(images, d)
@@ -84,14 +90,14 @@ def validate(valid_data_loader, model):
 
 if __name__ == '__main__':
 
-    df = pd.read_csv('/home/giora/rip_current_detector/aug_data_labels.csv')
+    df = pd.read_csv('/home/giora/rip_current_detector/doubleRip_aug_data_labels.csv')
     df_randomized = df.sample(len(df))
     df_train = df_randomized[0:int(0.8*len(df))]
     df_val = df_randomized[int(0.8*len(df)):]
-    img_dir = '/home/giora/rip_current_detector/augmanted_training_data/'
+    img_dir = '/home/giora/rip_current_detector/training_data_two_rips/'
     trans = T.ToTensor()
-    train_dataset = RipCurrentDataset(df_train, img_dir, trans)
-    valid_dataset = RipCurrentDataset(df_val, img_dir, trans)
+    train_dataset = DoubleRipCurrentDataset(df_train, img_dir, trans)
+    valid_dataset = DoubleRipCurrentDataset(df_val, img_dir, trans)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS)
     valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS)
@@ -115,7 +121,7 @@ if __name__ == '__main__':
     train_loss_list = []
     val_loss_list = []
     # name to save the trained model with
-    MODEL_NAME = 'model_single_rip'
+    MODEL_NAME = 'model'
     # whether to show transformed images from data loader or not
     if VISUALIZE_TRANSFORMED_IMAGES:
         from custom_utils import show_tranformed_image
@@ -133,6 +139,7 @@ if __name__ == '__main__':
         start = time.time()
         model.train()
         train_loss = train(train_loader, model)
+        #model.eval()
         val_loss = validate(valid_loader, model)
         print(f"Epoch #{epoch + 1} train loss: {train_loss_hist.value:.3f}")
         print(f"Epoch #{epoch + 1} validation loss: {val_loss_hist.value:.3f}")
