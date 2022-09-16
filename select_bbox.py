@@ -51,7 +51,7 @@ class BoundingBoxWidget(object):
 base_path = Path('test_data')
 
 # video_file_path = Path('test_data/rip_01.mp4')
-for video_file_path in base_path.glob('rip_04*'):
+for video_file_path in base_path.glob('rip*'):
     save_name = video_file_path.name.split('.')[0]
 
 
@@ -94,3 +94,4 @@ for video_file_path in base_path.glob('rip_04*'):
         if key == ord('n'):
             cv2.destroyAllWindows()
             break
+
